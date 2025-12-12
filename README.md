@@ -1,11 +1,13 @@
 # csvToMermaidGantt
 
-A Python CLI tool that converts CSV files to Mermaid Gantt charts.
+A Python CLI tool that converts CSV files to Mermaid Gantt charts, with support for digital forensics timelines.
 
 ## Features
 
 - Convert CSV files to Mermaid Gantt chart syntax
-- Support for task names, start dates, durations/end dates, and status
+- Support for digital forensics format with timestamps (seconds to years)
+- Support for legacy project management format with dates and durations
+- Timestamp parsing (ISO 8601, Unix timestamps)
 - CLI interface with stdin/stdout support
 - 100% test coverage
 - Type-checked with mypy
@@ -55,24 +57,87 @@ cat input.csv | csv-to-mermaid-gantt > output.md
 ```python
 from csv_to_mermaid_gantt import convert_csv_to_mermaid
 
+# Legacy format
 csv_content = """task_name,start_date,duration,status
 Planning,2024-01-01,5d,done
 Development,2024-01-06,10d,active"""
 
 mermaid_output = convert_csv_to_mermaid(csv_content, title="My Project")
 print(mermaid_output)
+
+# Forensics format with timestamps
+forensics_csv = """Name,start_timestamp,end_timestamp
+File Access,2024-01-15T09:23:11,2024-01-15T09:23:45
+Network Event,1705315200,1705315260"""
+
+forensics_output = convert_csv_to_mermaid(forensics_csv, title="Forensics Timeline")
+print(forensics_output)
 ```
 
 ## CSV Format
 
-The tool expects CSV files with the following columns:
+The tool supports two CSV formats:
 
-- `task_name` (required): The name of the task
-- `start_date` (optional): Start date in YYYY-MM-DD format
-- `duration` or `end_date` (optional): Duration (e.g., "5d") or end date (YYYY-MM-DD)
+### Digital Forensics Format (with timestamps)
+
+For digital forensics use cases with second-level precision:
+
+```csv
+Name,start_timestamp,end_timestamp
+File Access,2024-01-01T12:00:45,2024-01-01T12:01:23
+Network Connection,1704110400,1704110460
+Process Execution,2024-01-01 14:22:33.456789,2024-01-01 14:23:05.123456
+```
+
+Supported timestamp formats:
+- **Unix timestamp**: Seconds since epoch (e.g., `1704110400`)
+- **ISO 8601**: Full datetime with optional microseconds (e.g., `2024-01-01T12:30:45.123456Z`)
+- **Space-separated**: Date and time with space (e.g., `2024-01-01 12:30:45`)
+- **Date only**: For day-level precision (e.g., `2024-01-01`)
+
+### Legacy Project Management Format
+
+For traditional project management with dates and durations:
+
+```csv
+task_name,start_date,duration,status
+Planning Phase,2024-01-01,5d,done
+Design Phase,2024-01-06,7d,active
+Development,2024-01-13,14d,
+Testing,2024-01-27,7d,
+Deployment,2024-02-03,2d,crit
+```
+
+Fields:
+- `task_name` or `Name` (required): The name of the task/event
+- `start_date` or `start_timestamp` (optional): Start date or timestamp
+- `duration` (optional): Duration (e.g., "5d" for 5 days)
+- `end_date` or `end_timestamp` (optional): End date or timestamp
 - `status` (optional): Task status - `active`, `done`, or `crit` (critical)
 
-### Example CSV
+### Example: Digital Forensics CSV
+
+```csv
+Name,start_timestamp,end_timestamp
+File Creation,2024-01-15T09:23:11,2024-01-15T09:23:11
+Suspicious Download,2024-01-15T09:25:45,2024-01-15T09:26:12
+Registry Modification,2024-01-15T09:27:03,2024-01-15T09:27:03
+Network Exfiltration,2024-01-15T09:28:15,2024-01-15T09:35:42
+```
+
+### Example Output
+
+```mermaid
+gantt
+    title Digital Forensics Timeline
+    dateFormat YYYY-MM-DD HH:mm:ss
+    File Creation :file_creation, 2024-01-15 09:23:11, 2024-01-15 09:23:11
+    Suspicious Download :suspicious_download, 2024-01-15 09:25:45, 2024-01-15 09:26:12
+    Registry Modification :registry_modification, 2024-01-15 09:27:03, 2024-01-15 09:27:03
+    Network Exfiltration :network_exfiltration, 2024-01-15 09:28:15, 2024-01-15 09:35:42
+```
+
+### Example: Legacy Format CSV
 
 ```csv
 task_name,start_date,duration,status

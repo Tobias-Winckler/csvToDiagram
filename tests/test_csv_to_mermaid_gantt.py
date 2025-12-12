@@ -5,6 +5,8 @@ import tempfile
 import os
 from csv_to_mermaid_gantt import (
     parse_csv,
+    parse_timestamp,
+    normalize_task_dict,
     validate_task,
     format_task_id,
     generate_mermaid_gantt,
@@ -80,6 +82,129 @@ Task 2,2024-01-04,2d"""
         assert len(result) == 2
         assert result[0]["task_name"] == "Task 1"
         assert result[1]["task_name"] == "Task 2"
+
+
+class TestParseTimestamp:
+    """Tests for parse_timestamp function."""
+
+    def test_parse_unix_timestamp(self) -> None:
+        """Test parsing Unix timestamp."""
+        dt = parse_timestamp("1704110400")
+        assert dt is not None
+        assert dt.year == 2024
+        assert dt.month == 1
+        assert dt.day == 1
+
+    def test_parse_iso8601_with_z(self) -> None:
+        """Test parsing ISO 8601 with Z."""
+        dt = parse_timestamp("2024-01-01T12:30:45Z")
+        assert dt is not None
+        assert dt.year == 2024
+        assert dt.month == 1
+        assert dt.day == 1
+        assert dt.hour == 12
+        assert dt.minute == 30
+        assert dt.second == 45
+
+    def test_parse_iso8601_with_microseconds(self) -> None:
+        """Test parsing ISO 8601 with microseconds."""
+        dt = parse_timestamp("2024-01-01T12:30:45.123456")
+        assert dt is not None
+        assert dt.microsecond == 123456
+
+    def test_parse_iso8601_space_separator(self) -> None:
+        """Test parsing ISO 8601 with space separator."""
+        dt = parse_timestamp("2024-01-01 12:30:45")
+        assert dt is not None
+        assert dt.hour == 12
+
+    def test_parse_date_only(self) -> None:
+        """Test parsing date only."""
+        dt = parse_timestamp("2024-01-01")
+        assert dt is not None
+        assert dt.year == 2024
+        assert dt.hour == 0
+
+    def test_parse_empty_string(self) -> None:
+        """Test parsing empty string."""
+        assert parse_timestamp("") is None
+        assert parse_timestamp("  ") is None
+
+    def test_parse_invalid_format(self) -> None:
+        """Test parsing invalid format."""
+        assert parse_timestamp("invalid") is None
+
+
+class TestNormalizeTaskDict:
+    """Tests for normalize_task_dict function."""
+
+    def test_normalize_name_field(self) -> None:
+        """Test normalizing 'Name' to 'task_name'."""
+        task = {"Name": "Task 1", "start_timestamp": "2024-01-01T12:00:00"}
+        normalized = normalize_task_dict(task)
+        assert normalized["task_name"] == "Task 1"
+        assert "Name" in normalized  # Original field preserved
+
+    def test_normalize_timestamps(self) -> None:
+        """Test normalizing timestamp fields."""
+        task = {
+            "Name": "Task 1",
+            "start_timestamp": "2024-01-01T12:00:00",
+            "end_timestamp": "2024-01-01T13:00:00",
+        }
+        normalized = normalize_task_dict(task)
+        assert normalized["start_date"] == "2024-01-01"
+        assert normalized["start_time"] == "12:00:00"
+        assert normalized["end_date"] == "2024-01-01"
+        assert normalized["end_time"] == "13:00:00"
+
+    def test_normalize_unix_timestamps(self) -> None:
+        """Test normalizing Unix timestamps."""
+        task = {
+            "Name": "File Access",
+            "start_timestamp": "1704110400",
+            "end_timestamp": "1704110460",
+        }
+        normalized = normalize_task_dict(task)
+        assert normalized["task_name"] == "File Access"
+        assert "start_date" in normalized
+        assert "start_time" in normalized
+
+    def test_normalize_preserves_existing_fields(self) -> None:
+        """Test that normalization preserves existing fields."""
+        task = {"task_name": "Task 1", "start_date": "2024-01-01", "status": "done"}
+        normalized = normalize_task_dict(task)
+        assert normalized["task_name"] == "Task 1"
+        assert normalized["start_date"] == "2024-01-01"
+        assert normalized["status"] == "done"
+
+
+class TestParseCSVWithTimestamps:
+    """Tests for parsing CSV with timestamp format."""
+
+    def test_parse_csv_with_timestamps(self) -> None:
+        """Test parsing CSV with Name,start_timestamp,end_timestamp format."""
+        csv_content = """Name,start_timestamp,end_timestamp
+File Access,2024-01-01T12:00:00,2024-01-01T12:01:00
+Network Connection,1704110400,1704110460"""
+
+        result = parse_csv(csv_content)
+        assert len(result) == 2
+        assert result[0]["task_name"] == "File Access"
+        assert result[0]["start_date"] == "2024-01-01"
+        assert result[0]["start_time"] == "12:00:00"
+        assert result[0]["end_time"] == "12:01:00"
+
+    def test_parse_csv_mixed_formats(self) -> None:
+        """Test that legacy format still works."""
+        csv_content = """task_name,start_date,duration
+Planning,2024-01-01,5d"""
+
+        result = parse_csv(csv_content)
+        assert len(result) == 1
+        assert result[0]["task_name"] == "Planning"
+        assert result[0]["start_date"] == "2024-01-01"
+        assert result[0]["duration"] == "5d"
 
 
 class TestValidateTask:
@@ -221,6 +346,22 @@ class TestGenerateMermaidGantt:
         assert "Task 1 :task_1, 2024-01-01, 3d" in result
         assert "invalid" not in result
 
+    def test_generate_with_timestamps(self) -> None:
+        """Test generating Gantt chart with timestamp data."""
+        tasks = [
+            {
+                "task_name": "Event 1",
+                "start_date": "2024-01-01",
+                "start_time": "12:00:00",
+                "end_date": "2024-01-01",
+                "end_time": "13:00:00",
+            }
+        ]
+        result = generate_mermaid_gantt(tasks)
+
+        assert "dateFormat YYYY-MM-DD HH:mm:ss" in result
+        assert "Event 1 :event_1, 2024-01-01 12:00:00, 2024-01-01 13:00:00" in result
+
 
 class TestConvertCSVToMermaid:
     """Tests for convert_csv_to_mermaid function."""
@@ -241,6 +382,18 @@ Task 1,2024-01-01,3d"""
 
         result = convert_csv_to_mermaid(csv_content, "My Project")
         assert "title My Project" in result
+
+    def test_convert_forensics_format(self) -> None:
+        """Test converting forensics CSV format with timestamps."""
+        csv_content = """Name,start_timestamp,end_timestamp
+File Access,2024-01-01T12:00:00,2024-01-01T12:01:00
+Network Event,1704110400,1704110460"""
+
+        result = convert_csv_to_mermaid(csv_content, "Forensics Timeline")
+        assert "title Forensics Timeline" in result
+        assert "dateFormat YYYY-MM-DD HH:mm:ss" in result
+        assert "File Access" in result
+        assert "Network Event" in result
 
 
 class TestMain:
