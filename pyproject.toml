@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "csv-to-mermaid-gantt"
+version = "0.1.0"
+description = "A Python CLI tool to convert CSV files to Mermaid Gantt charts"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "mypy>=1.0.0",
+    "flake8>=6.0.0",
+    "black>=23.0.0",
+]
+
+[project.scripts]
+csv-to-mermaid-gantt = "csv_to_mermaid_gantt:main"
+
+[tool.black]
+line-length = 88
+target-version = ['py38']
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=csv_to_mermaid_gantt --cov-report=html --cov-report=term-missing --cov-fail-under=100"
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
