@@ -15,6 +15,19 @@ import sys
 from datetime import datetime
 from typing import List, Dict, Optional
 
+# Global verbose flag
+_verbose = False
+
+
+def log_verbose(message: str) -> None:
+    """Print verbose logging message if verbose mode is enabled.
+
+    Args:
+        message: Message to print
+    """
+    if _verbose:
+        print(f"[DEBUG] {message}", file=sys.stderr)
+
 
 def parse_timestamp(timestamp_str: str) -> Optional[datetime]:
     """Parse a timestamp string into a datetime object.
@@ -69,10 +82,12 @@ def normalize_task_dict(task: Dict[str, str]) -> Dict[str, str]:
         Normalized task dictionary
     """
     normalized = dict(task)
+    log_verbose(f"Normalizing task with fields: {list(task.keys())}")
 
     # Convert 'Name' to 'task_name' for consistency
     if "Name" in normalized and "task_name" not in normalized:
         normalized["task_name"] = normalized["Name"]
+        log_verbose(f"Converted 'Name' field to 'task_name': {normalized['task_name']}")
 
     # Handle timestamp-based format (Name,start_timestamp,end_timestamp)
     if "start_timestamp" in normalized:
@@ -81,12 +96,20 @@ def normalize_task_dict(task: Dict[str, str]) -> Dict[str, str]:
             # Use second precision for digital forensics
             normalized["start_date"] = start_dt.strftime("%Y-%m-%d")
             normalized["start_time"] = start_dt.strftime("%H:%M:%S")
+            log_verbose(
+                f"Parsed start_timestamp: "
+                f"{normalized['start_date']} {normalized['start_time']}"
+            )
 
     if "end_timestamp" in normalized:
         end_dt = parse_timestamp(normalized["end_timestamp"])
         if end_dt:
             normalized["end_date"] = end_dt.strftime("%Y-%m-%d")
             normalized["end_time"] = end_dt.strftime("%H:%M:%S")
+            log_verbose(
+                f"Parsed end_timestamp: "
+                f"{normalized['end_date']} {normalized['end_time']}"
+            )
 
     return normalized
 
@@ -111,12 +134,20 @@ def parse_csv(csv_content: str) -> List[Dict[str, str]]:
     reader = csv.DictReader(lines)
     tasks = []
 
-    for row in reader:
+    # Get the fieldnames from the CSV
+    fieldnames = reader.fieldnames
+    log_verbose(f"CSV headers detected: {fieldnames}")
+
+    for idx, row in enumerate(reader):
+        log_verbose(f"Processing row {idx + 1}: {dict(row)}")
         # Filter out empty rows where all values are empty strings or None
         if any(value and value.strip() for value in row.values()):
             normalized_task = normalize_task_dict(dict(row))
             tasks.append(normalized_task)
+        else:
+            log_verbose(f"Skipping empty row {idx + 1}")
 
+    log_verbose(f"Parsed {len(tasks)} task(s) from CSV")
     return tasks
 
 
@@ -132,7 +163,15 @@ def validate_task(task: Dict[str, str]) -> None:
     required_fields = ["task_name"]
     for field in required_fields:
         if field not in task or not task[field].strip():
-            raise ValueError(f"Missing required field: {field}")
+            available_fields = [k for k in task.keys() if k is not None]
+            raise ValueError(
+                f"Missing required field: '{field}'\n"
+                f"Available fields in CSV: {available_fields}\n"
+                f"Hint: Use 'Name' or 'task_name' as the header "
+                f"for the task name column.\n"
+                f"      Run with --verbose to see detailed parsing "
+                f"information."
+            )
 
 
 def format_task_id(task_name: str) -> str:
@@ -227,6 +266,8 @@ def convert_csv_to_mermaid(csv_content: str, title: str = "Gantt Chart") -> str:
 
 def main() -> None:
     """Main CLI entry point."""
+    global _verbose
+
     parser = argparse.ArgumentParser(
         description="Convert CSV files to Mermaid Gantt charts"
     )
@@ -244,22 +285,39 @@ def main() -> None:
         default="Gantt Chart",
         help='Title for the Gantt chart (default: "Gantt Chart")',
     )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Enable verbose output for debugging",
+    )
 
     args = parser.parse_args()
+    _verbose = args.verbose
 
     try:
         # Read input
         if args.input_file:
+            log_verbose(f"Reading input from file: {args.input_file}")
             with open(args.input_file, "r", encoding="utf-8") as f:
                 csv_content = f.read()
         else:
+            log_verbose("Reading input from stdin")
             csv_content = sys.stdin.read()
 
+        log_verbose(
+            f"Input CSV content ({len(csv_content)} bytes):\n"
+            f"{csv_content[:200]}..."
+        )
+
         # Convert
+        log_verbose("Starting CSV to Mermaid conversion")
         mermaid_output = convert_csv_to_mermaid(csv_content, args.title)
+        log_verbose("Conversion successful")
 
         # Write output
         if args.output:
+            log_verbose(f"Writing output to file: {args.output}")
             with open(args.output, "w", encoding="utf-8") as f:
                 f.write(mermaid_output)
         else:

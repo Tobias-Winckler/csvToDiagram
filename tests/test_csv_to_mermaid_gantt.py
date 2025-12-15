@@ -218,13 +218,13 @@ class TestValidateTask:
     def test_validate_task_missing_name(self) -> None:
         """Test validating task with missing name."""
         task = {"start_date": "2024-01-01"}
-        with pytest.raises(ValueError, match="Missing required field: task_name"):
+        with pytest.raises(ValueError, match="Missing required field: 'task_name'"):
             validate_task(task)
 
     def test_validate_task_empty_name(self) -> None:
         """Test validating task with empty name."""
         task = {"task_name": "  ", "start_date": "2024-01-01"}
-        with pytest.raises(ValueError, match="Missing required field: task_name"):
+        with pytest.raises(ValueError, match="Missing required field: 'task_name'"):
             validate_task(task)
 
 
@@ -557,6 +557,32 @@ Task 1,2024-01-01,3d"""
                     output = mock_stdout.getvalue()
                     assert "gantt" in output
                     assert "Task 1" in output
+
+    def test_main_with_verbose_flag(self) -> None:
+        """Test main function with verbose flag."""
+        csv_content = """Name,start_timestamp,end_timestamp
+Task 1,2024-01-01T12:00:00,2024-01-01T13:00:00"""
+
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".csv") as f:
+            f.write(csv_content)
+            temp_file = f.name
+
+        try:
+            with patch(
+                "sys.argv", ["csv_to_mermaid_gantt", temp_file, "--verbose"]
+            ):
+                with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
+                    with patch("sys.stderr", new_callable=StringIO) as mock_stderr:
+                        main()
+                        output = mock_stdout.getvalue()
+                        stderr = mock_stderr.getvalue()
+                        assert "gantt" in output
+                        assert "Task 1" in output
+                        # Check for verbose output in stderr
+                        assert "[DEBUG]" in stderr
+                        assert "CSV headers detected" in stderr
+        finally:
+            os.unlink(temp_file)
 
     def test_main_with_custom_title(self) -> None:
         """Test main function with custom title."""
