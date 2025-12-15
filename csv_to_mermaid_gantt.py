@@ -15,17 +15,15 @@ import sys
 from datetime import datetime
 from typing import List, Dict, Optional
 
-# Global verbose flag
-_verbose = False
 
-
-def log_verbose(message: str) -> None:
+def log_verbose(message: str, verbose: bool = False) -> None:
     """Print verbose logging message if verbose mode is enabled.
 
     Args:
         message: Message to print
+        verbose: Whether to print the message
     """
-    if _verbose:
+    if verbose:
         print(f"[DEBUG] {message}", file=sys.stderr)
 
 
@@ -70,24 +68,30 @@ def parse_timestamp(timestamp_str: str) -> Optional[datetime]:
     return None
 
 
-def normalize_task_dict(task: Dict[str, str]) -> Dict[str, str]:
+def normalize_task_dict(
+    task: Dict[str, str], verbose: bool = False
+) -> Dict[str, str]:
     """Normalize task dictionary to use consistent field names.
 
     Converts 'Name' to 'task_name' and timestamp fields to date fields.
 
     Args:
         task: Task dictionary with potentially varied field names
+        verbose: Whether to print verbose logging messages
 
     Returns:
         Normalized task dictionary
     """
     normalized = dict(task)
-    log_verbose(f"Normalizing task with fields: {list(task.keys())}")
+    log_verbose(f"Normalizing task with fields: {list(task.keys())}", verbose)
 
     # Convert 'Name' to 'task_name' for consistency
     if "Name" in normalized and "task_name" not in normalized:
         normalized["task_name"] = normalized["Name"]
-        log_verbose(f"Converted 'Name' field to 'task_name': {normalized['task_name']}")
+        log_verbose(
+            f"Converted 'Name' field to 'task_name': {normalized['task_name']}",
+            verbose
+        )
 
     # Handle timestamp-based format (Name,start_timestamp,end_timestamp)
     if "start_timestamp" in normalized:
@@ -98,7 +102,8 @@ def normalize_task_dict(task: Dict[str, str]) -> Dict[str, str]:
             normalized["start_time"] = start_dt.strftime("%H:%M:%S")
             log_verbose(
                 f"Parsed start_timestamp: "
-                f"{normalized['start_date']} {normalized['start_time']}"
+                f"{normalized['start_date']} {normalized['start_time']}",
+                verbose
             )
 
     if "end_timestamp" in normalized:
@@ -108,17 +113,19 @@ def normalize_task_dict(task: Dict[str, str]) -> Dict[str, str]:
             normalized["end_time"] = end_dt.strftime("%H:%M:%S")
             log_verbose(
                 f"Parsed end_timestamp: "
-                f"{normalized['end_date']} {normalized['end_time']}"
+                f"{normalized['end_date']} {normalized['end_time']}",
+                verbose
             )
 
     return normalized
 
 
-def parse_csv(csv_content: str) -> List[Dict[str, str]]:
+def parse_csv(csv_content: str, verbose: bool = False) -> List[Dict[str, str]]:
     """Parse CSV content and return a list of task dictionaries.
 
     Args:
         csv_content: CSV formatted string with task data
+        verbose: Whether to print verbose logging messages
 
     Returns:
         List of dictionaries containing task information
@@ -134,18 +141,18 @@ def parse_csv(csv_content: str) -> List[Dict[str, str]]:
     reader = csv.DictReader(lines)
     tasks = []
 
-    log_verbose(f"CSV headers detected: {reader.fieldnames}")
+    log_verbose(f"CSV headers detected: {reader.fieldnames}", verbose)
 
     for idx, row in enumerate(reader):
-        log_verbose(f"Processing row {idx + 1}: {dict(row)}")
+        log_verbose(f"Processing row {idx + 1}: {dict(row)}", verbose)
         # Filter out empty rows where all values are empty strings or None
         if any(value and value.strip() for value in row.values()):
-            normalized_task = normalize_task_dict(dict(row))
+            normalized_task = normalize_task_dict(dict(row), verbose)
             tasks.append(normalized_task)
         else:
-            log_verbose(f"Skipping empty row {idx + 1}")
+            log_verbose(f"Skipping empty row {idx + 1}", verbose)
 
-    log_verbose(f"Parsed {len(tasks)} task(s) from CSV")
+    log_verbose(f"Parsed {len(tasks)} task(s) from CSV", verbose)
     return tasks
 
 
@@ -245,12 +252,15 @@ def generate_mermaid_gantt(
     return "\n".join(lines)
 
 
-def convert_csv_to_mermaid(csv_content: str, title: str = "Gantt Chart") -> str:
+def convert_csv_to_mermaid(
+    csv_content: str, title: str = "Gantt Chart", verbose: bool = False
+) -> str:
     """Convert CSV content to Mermaid Gantt chart.
 
     Args:
         csv_content: CSV formatted string with task data
         title: Title for the Gantt chart
+        verbose: Whether to print verbose logging messages
 
     Returns:
         Mermaid Gantt chart as a string
@@ -258,14 +268,12 @@ def convert_csv_to_mermaid(csv_content: str, title: str = "Gantt Chart") -> str:
     Raises:
         ValueError: If CSV format is invalid or task data is invalid
     """
-    tasks = parse_csv(csv_content)
+    tasks = parse_csv(csv_content, verbose)
     return generate_mermaid_gantt(tasks, title)
 
 
 def main() -> None:
     """Main CLI entry point."""
-    global _verbose
-
     parser = argparse.ArgumentParser(
         description="Convert CSV files to Mermaid Gantt charts"
     )
@@ -291,31 +299,34 @@ def main() -> None:
     )
 
     args = parser.parse_args()
-    _verbose = args.verbose
+    verbose = args.verbose
 
     try:
         # Read input
         if args.input_file:
-            log_verbose(f"Reading input from file: {args.input_file}")
+            log_verbose(f"Reading input from file: {args.input_file}", verbose)
             with open(args.input_file, "r", encoding="utf-8") as f:
                 csv_content = f.read()
         else:
-            log_verbose("Reading input from stdin")
+            log_verbose("Reading input from stdin", verbose)
             csv_content = sys.stdin.read()
 
         log_verbose(
             f"Input CSV content: {len(csv_content)} bytes, "
-            f"{len(csv_content.splitlines())} lines"
+            f"{len(csv_content.splitlines())} lines",
+            verbose
         )
 
         # Convert
-        log_verbose("Starting CSV to Mermaid conversion")
-        mermaid_output = convert_csv_to_mermaid(csv_content, args.title)
-        log_verbose("Conversion successful")
+        log_verbose("Starting CSV to Mermaid conversion", verbose)
+        mermaid_output = convert_csv_to_mermaid(
+            csv_content, args.title, verbose
+        )
+        log_verbose("Conversion successful", verbose)
 
         # Write output
         if args.output:
-            log_verbose(f"Writing output to file: {args.output}")
+            log_verbose(f"Writing output to file: {args.output}", verbose)
             with open(args.output, "w", encoding="utf-8") as f:
                 f.write(mermaid_output)
         else:
