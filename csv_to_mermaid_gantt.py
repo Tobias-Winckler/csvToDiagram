@@ -306,8 +306,8 @@ def main() -> None:
             csv_content = sys.stdin.read()
 
         log_verbose(
-            f"Input CSV content ({len(csv_content)} bytes):\n"
-            f"{csv_content[:200]}..."
+            f"Input CSV content: {len(csv_content)} bytes, "
+            f"{len(csv_content.splitlines())} lines"
         )
 
         # Convert
