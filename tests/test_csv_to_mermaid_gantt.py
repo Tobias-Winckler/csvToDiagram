@@ -428,7 +428,11 @@ Task 1,2025-12-12 07:59:00,2025-12-12 08:00:21,5d"""
         
         This test covers the exact scenario from the reported issue where the CSV
         has 'Name' as the header (not 'task_name') and includes an extra column
-        that doesn't have a corresponding header.
+        (0:01:21) that doesn't have a corresponding header.
+        
+        Note: This is intentionally malformed CSV (4 data values, 3 headers) to
+        test the real-world scenario from the issue. Python's csv.DictReader
+        handles this by creating a None key for extra values, which we ignore.
         """
         csv_content = """Name,start_timestamp,end_timestamp
 updTcpIpConnectState,2025-12-12 07:59:00,2025-12-12 08:00:21,0:01:21"""
@@ -444,7 +448,11 @@ updTcpIpConnectState,2025-12-12 07:59:00,2025-12-12 08:00:21,0:01:21"""
         """Test converting CSV from issue with task_name header and extra column.
         
         This test covers the second scenario from the reported issue where the CSV
-        uses 'task_name' as the header and includes an extra column.
+        uses 'task_name' as the header and includes an extra column (0:01:21).
+        
+        Note: This is intentionally malformed CSV (4 data values, 3 headers) to
+        test the real-world scenario from the issue. Python's csv.DictReader
+        handles this by creating a None key for extra values, which we ignore.
         """
         csv_content = """task_name,start_timestamp,end_timestamp
 updTcpIpConnectState,2025-12-12 07:59:00,2025-12-12 08:00:21,0:01:21"""
