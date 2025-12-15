@@ -168,6 +168,8 @@ def validate_task(task: Dict[str, str]) -> None:
     required_fields = ["task_name"]
     for field in required_fields:
         if field not in task or not task[field].strip():
+            # Filter out None keys which can occur when CSV rows have more
+            # values than headers (malformed CSV with extra columns)
             available_fields = [k for k in task.keys() if k is not None]
             raise ValueError(
                 f"Missing required field: '{field}'\n"

@@ -433,7 +433,8 @@ Task 1,2025-12-12 07:59:00,2025-12-12 08:00:21,5d"""
         Note: This is intentionally malformed CSV (4 comma-separated values in the
         data row, but only 3 headers). The fourth comma-separated value (0:01:21)
         appears after the third column. Python's csv.DictReader handles this by
-        creating a None key for extra values, which we gracefully ignore.
+        creating a None key for extra values, which we gracefully ignore (see the
+        None key filtering in validate_task function at line 171).
         """
         csv_content = """Name,start_timestamp,end_timestamp
 updTcpIpConnectState,2025-12-12 07:59:00,2025-12-12 08:00:21,0:01:21"""
@@ -454,7 +455,8 @@ updTcpIpConnectState,2025-12-12 07:59:00,2025-12-12 08:00:21,0:01:21"""
         Note: This is intentionally malformed CSV (4 comma-separated values in the
         data row, but only 3 headers). The fourth comma-separated value (0:01:21)
         appears after the third column. Python's csv.DictReader handles this by
-        creating a None key for extra values, which we gracefully ignore.
+        creating a None key for extra values, which we gracefully ignore (see the
+        None key filtering in validate_task function at line 171).
         """
         csv_content = """task_name,start_timestamp,end_timestamp
 updTcpIpConnectState,2025-12-12 07:59:00,2025-12-12 08:00:21,0:01:21"""
