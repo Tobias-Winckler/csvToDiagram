@@ -46,6 +46,22 @@ csv-to-mermaid-gantt input.csv -t "My Project Timeline"
 csv-to-mermaid-gantt input.csv -o output.md
 ```
 
+### Setting diagram width
+
+When working with many tasks, the generated Gantt diagram may appear too narrow. You can specify a custom width in pixels:
+
+```bash
+csv-to-mermaid-gantt input.csv -w 2000
+```
+
+Or with long option:
+
+```bash
+csv-to-mermaid-gantt input.csv --width 2000
+```
+
+This adds Mermaid configuration to set the diagram width, making it easier to read when exporting as PNG or SVG. As a rule of thumb, allocate roughly 40–60 pixels of width per task row: for small timelines (up to ~20 tasks) use around 1500px, for medium timelines (20–40 tasks) use ~2000px, for larger timelines (40–60 tasks) use ~2500px, and for very large timelines (60+ tasks) consider 3000px or more.
+
 ### Using stdin/stdout
 
 ```bash
@@ -80,6 +96,12 @@ Development,2024-01-06,10d,active"""
 
 mermaid_output = convert_csv_to_mermaid(csv_content, title="My Project")
 print(mermaid_output)
+
+# With custom width for better readability
+mermaid_output_wide = convert_csv_to_mermaid(
+    csv_content, title="My Project", width=2000
+)
+print(mermaid_output_wide)
 
 # Forensics format with timestamps
 forensics_csv = """Name,start_timestamp,end_timestamp
