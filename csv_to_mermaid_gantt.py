@@ -222,7 +222,7 @@ def generate_mermaid_gantt(
     # Add configuration directive if width is specified
     lines = []
     if width is not None:
-        # Use Mermaid's themeVariables to set section heights which affects layout
+        # Configure Mermaid to set diagram width and font size for better layout
         # This helps with rendering when exporting to PNG/SVG
         config = (
             f"%%{{init: {{'theme':'default', "

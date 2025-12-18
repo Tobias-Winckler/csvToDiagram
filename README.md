@@ -60,7 +60,7 @@ Or with long option:
 csv-to-mermaid-gantt input.csv --width 2000
 ```
 
-This adds Mermaid configuration to set the diagram width, making it easier to read when exporting as PNG or SVG. Recommended values range from 1500 to 3000 pixels depending on the number of tasks.
+This adds Mermaid configuration to set the diagram width, making it easier to read when exporting as PNG or SVG. As a rule of thumb, allocate roughly 40–60 pixels of width per task row: for small timelines (up to ~20 tasks) use around 1500px, for medium timelines (20–40 tasks) use ~2000px, for larger timelines (40–60 tasks) use ~2500px, and for very large timelines (60+ tasks) consider 3000px or more.
 
 ### Using stdin/stdout
 
