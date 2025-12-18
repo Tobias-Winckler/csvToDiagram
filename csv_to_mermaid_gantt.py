@@ -275,20 +275,27 @@ def combine_tasks_by_name(
                     )
                     current_end = max(current_end, next_end)
                 else:
-                    # Gap too large, save current and start new
-                    # Update the end date/time in the task dict
+                    # Gap too large, save current combined task and start new sequence
+                    # Update the start and end date/time in the task dict
                     updated_task = dict(current_task)
+                    updated_task["start_date"] = current_start.strftime("%Y-%m-%d")
+                    if "start_time" in current_task:
+                        updated_task["start_time"] = current_start.strftime("%H:%M:%S")
                     updated_task["end_date"] = current_end.strftime("%Y-%m-%d")
                     if "end_time" in current_task:
                         updated_task["end_time"] = current_end.strftime("%H:%M:%S")
                     merged.append(updated_task)
 
-                    # Move to next task
+                    # Start new sequence with next task
+                    current_start = next_start
                     current_end = next_end
                     current_task = next_task
 
-            # Add the last task
+            # Add the last combined task
             updated_task = dict(current_task)
+            updated_task["start_date"] = current_start.strftime("%Y-%m-%d")
+            if "start_time" in current_task:
+                updated_task["start_time"] = current_start.strftime("%H:%M:%S")
             updated_task["end_date"] = current_end.strftime("%Y-%m-%d")
             if "end_time" in current_task:
                 updated_task["end_time"] = current_end.strftime("%H:%M:%S")
