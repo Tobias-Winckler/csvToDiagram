@@ -90,7 +90,7 @@ def parse_log_csv(csv_content: str, verbose: bool = False) -> List[Dict[str, str
     if reader.fieldnames:
         original_fieldnames = list(reader.fieldnames)
         reader.fieldnames = [
-            name.strip() if name else name for name in reader.fieldnames
+            name.strip() if name is not None else name for name in reader.fieldnames
         ]
         log_verbose(f"Log CSV headers: {reader.fieldnames}", verbose)
         if original_fieldnames != list(reader.fieldnames):
@@ -105,8 +105,11 @@ def parse_log_csv(csv_content: str, verbose: bool = False) -> List[Dict[str, str
         # Skip empty rows
         if any(value and value.strip() for value in row.values()):
             # Normalize keys in the row dictionary to match normalized fieldnames
+            # Filter out None keys (should not happen in practice with csv.DictReader)
             normalized_row = {
-                key.strip() if key else key: value for key, value in row.items()
+                key.strip() if key is not None else "": value
+                for key, value in row.items()
+                if key is not None
             }
             log_entries.append(normalized_row)
 
