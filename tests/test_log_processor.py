@@ -28,7 +28,14 @@ class TestParseLogTimestamp:
         """Test parsing empty strings."""
         assert parse_log_timestamp("", "") is None
         assert parse_log_timestamp("18/12/2025", "") is None
-        assert parse_log_timestamp("", "13.00.54") is None
+        # Empty date now uses default date (1970-01-01)
+        # to support logs without Date column
+        dt = parse_log_timestamp("", "13.00.54")
+        assert dt is not None
+        assert dt.year == 1970  # Default year
+        assert dt.hour == 13
+        assert dt.minute == 0
+        assert dt.second == 54
 
     def test_parse_invalid_format(self) -> None:
         """Test parsing invalid format."""
