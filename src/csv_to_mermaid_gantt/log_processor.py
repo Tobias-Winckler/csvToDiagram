@@ -107,9 +107,7 @@ def parse_log_csv(csv_content: str, verbose: bool = False) -> List[Dict[str, str
             # Normalize keys in the row dictionary to match normalized fieldnames
             # Filter out None keys (should not happen in practice with csv.DictReader)
             normalized_row = {
-                key.strip() if key is not None else "": value
-                for key, value in row.items()
-                if key is not None
+                key.strip(): value for key, value in row.items() if key is not None
             }
             log_entries.append(normalized_row)
 

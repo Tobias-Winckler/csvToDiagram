@@ -474,7 +474,7 @@ class TestConvertLogToCsv:
             assert "Matching connection events" in stderr_output
 
             # Check that conversion still works
-            lines = result.split("\n")
+            lines = result.splitlines()
             assert len(lines) == 2  # Header + 1 connection
         finally:
             sys.stderr = old_stderr
