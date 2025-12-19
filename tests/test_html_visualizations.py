@@ -179,12 +179,19 @@ class TestPrepareLineGraphData:
                 "start_date": "2024-01-01",
                 "start_time": "10:00:00",
                 "duration": "24h",
-            }
+            },
+            {
+                "task_name": "Task 2",
+                "start_date": "2024-01-01",
+                "start_time": "11:00:00",
+                "duration": "0h",
+            },
         ]
 
         result = prepare_line_graph_data(tasks, value_field="duration")
-        assert len(result["values"]) == 1
+        assert len(result["values"]) == 2
         assert result["values"][0] == 24.0
+        assert result["values"][1] == 0.0  # Zero hours should be included
 
     def test_prepare_line_graph_data_numeric(self) -> None:
         """Test preparing line graph data with plain numeric values."""
@@ -194,12 +201,19 @@ class TestPrepareLineGraphData:
                 "start_date": "2024-01-01",
                 "start_time": "10:00:00",
                 "value": "100",
-            }
+            },
+            {
+                "task_name": "Task 2",
+                "start_date": "2024-01-01",
+                "start_time": "11:00:00",
+                "value": "0",
+            },
         ]
 
         result = prepare_line_graph_data(tasks, value_field="value")
-        assert len(result["values"]) == 1
+        assert len(result["values"]) == 2
         assert result["values"][0] == 100.0
+        assert result["values"][1] == 0.0  # Zero should be included
 
     def test_prepare_line_graph_data_empty(self) -> None:
         """Test preparing line graph data with empty list."""

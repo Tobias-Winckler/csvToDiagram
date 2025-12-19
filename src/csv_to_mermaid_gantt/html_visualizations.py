@@ -93,7 +93,10 @@ def prepare_histogram_data(
         count = sum(
             1 for t in start_times if current_bin <= t < current_bin + bin_size_seconds
         )
-        if count > 0 or (bins and counts[-1] > 0):  # Include empty bins between data
+        # Include bins with data or empty bins between data points
+        has_data = count > 0
+        previous_bin_has_data = bins and counts[-1] > 0
+        if has_data or previous_bin_has_data:
             bins.append(datetime.fromtimestamp(current_bin).isoformat())
             counts.append(count)
         current_bin += bin_size_seconds
@@ -129,10 +132,10 @@ def prepare_line_graph_data(
 
             # If it's a duration like "5d", extract the number
             if value and isinstance(value, str):
-                numeric_value = 0.0
+                numeric_value: Optional[float] = None
                 if value.endswith("d"):
                     try:
-                        numeric_value = float(value[:-1]) * 24  # Convert days to hours
+                        numeric_value = float(value[:-1]) * 24
                     except ValueError:
                         pass
                 elif value.endswith("h"):
@@ -146,7 +149,7 @@ def prepare_line_graph_data(
                     except ValueError:
                         pass
 
-                if numeric_value > 0:
+                if numeric_value is not None:
                     timestamps.append(start_dt.isoformat())
                     values.append(numeric_value)
 
@@ -199,9 +202,7 @@ def generate_html_visualization(
     file_options = []
     for i, file_data in enumerate(csv_files_data):
         name = file_data.get("name", f"File {i+1}")
-        file_options.append(
-            f'                <option value="{i}">{name}</option>'
-        )
+        file_options.append(f'                <option value="{i}">{name}</option>')
     file_options_html = chr(10).join(file_options)
 
     # Build chart containers
