@@ -1158,7 +1158,7 @@ Task1,2024-01-01 10:01:20,2024-01-01 10:02:00"""
                     output = mock_stdout.getvalue()
                     assert "gantt" in output
                     assert "Task1" in output
-                    # Should not be combined (0 means disabled)
+                    # Should not be combined (0 disables the feature)
                     lines = output.split("\n")
                     task_lines = [line for line in lines if "Task1" in line]
                     assert len(task_lines) == 2
