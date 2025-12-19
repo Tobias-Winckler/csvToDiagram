@@ -1296,7 +1296,10 @@ Task1,2024-01-01T10:00:00,2024-01-01T11:00:00"""
             f.write(csv_content)
             temp_file = f.name
 
-        output_file = tempfile.mktemp(suffix=".html")
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".html"
+        ) as output_f:
+            output_file = output_f.name
 
         try:
             with patch(
