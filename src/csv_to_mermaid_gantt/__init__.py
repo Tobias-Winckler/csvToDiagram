@@ -504,9 +504,10 @@ def main() -> None:
         "--log-format",
         action="store_true",
         help=(
-            "Input is in log format (Date,Time,Action,Process,Protocol,LocalAddr,RemoteAddr) "
-            "instead of standard CSV format. Log entries will be matched and converted "
-            "to timeline format automatically."
+            "Input is in log format "
+            "(Date,Time,Action,Process,Protocol,LocalAddr,RemoteAddr) "
+            "instead of standard CSV format. Log entries will be matched "
+            "and converted to timeline format automatically."
         ),
     )
 
@@ -514,6 +515,10 @@ def main() -> None:
     verbose = args.verbose
 
     try:
+        # Import log processor if needed
+        if args.log_format:
+            from .log_processor import convert_log_to_csv
+
         # Handle HTML output mode
         if args.html:
             from .html_visualizations import convert_csv_files_to_html
@@ -527,24 +532,22 @@ def main() -> None:
                     log_verbose(f"Reading input from file: {input_path}", verbose)
                     with open(input_path, "r", encoding="utf-8-sig") as f:
                         csv_content = f.read()
-                    
+
                     # Convert log format if specified
                     if args.log_format:
                         log_verbose("Converting log format to standard CSV", verbose)
-                        from .log_processor import convert_log_to_csv
                         csv_content = convert_log_to_csv(csv_content)
-                    
+
                     csv_files.append({"name": input_path, "content": csv_content})
             else:
                 log_verbose("Reading input from stdin", verbose)
                 csv_content = sys.stdin.read()
-                
+
                 # Convert log format if specified
                 if args.log_format:
                     log_verbose("Converting log format to standard CSV", verbose)
-                    from .log_processor import convert_log_to_csv
                     csv_content = convert_log_to_csv(csv_content)
-                
+
                 csv_files.append({"name": "stdin", "content": csv_content})
 
             # Set threshold to None if 0 is specified (to disable combining)
@@ -589,7 +592,6 @@ def main() -> None:
         # Convert log format if specified
         if args.log_format:
             log_verbose("Converting log format to standard CSV", verbose)
-            from .log_processor import convert_log_to_csv
             csv_content = convert_log_to_csv(csv_content)
 
         log_verbose(
