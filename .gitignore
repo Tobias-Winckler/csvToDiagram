@@ -49,3 +49,6 @@ dmypy.json
 
 # Generated files
 output/
+
+# Input data
+input/
