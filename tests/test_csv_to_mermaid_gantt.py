@@ -1329,3 +1329,74 @@ Task1,2024-01-01T10:00:00,2024-01-01T11:00:00"""
                     output = mock_stdout.getvalue()
                     assert "<!DOCTYPE html>" in output
                     assert "stdin" in output
+
+    def test_main_with_log_format_flag(self) -> None:
+        """Test main function with log format flag."""
+        log_content = """Date,Time,Action,Process,Protocol,LocalAddr,RemoteAddr
+18/12/2025,13.00.54,Added,processName.exe,TCP,10.10.0.1:58100,123.123.123.123:443
+18/12/2025,13.00.56,Added,Unknown,TCP,10.10.0.1:58100,123.123.123.123:443
+18/12/2025,13.00.56,Removed,processName.exe,TCP,10.10.0.1:58100,123.123.123.123:443
+18/12/2025,13.02.55,Removed,Unknown,TCP,10.10.0.1:58100,123.123.123.123:443"""
+
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".csv") as f:
+            f.write(log_content)
+            temp_file = f.name
+
+        try:
+            with patch("sys.argv", ["csv_to_mermaid_gantt", temp_file, "--log-format"]):
+                with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
+                    main()
+                    output = mock_stdout.getvalue()
+                    assert "gantt" in output
+                    assert "processName.exe" in output
+                    assert "2025-12-18 13:00:54" in output
+                    assert "2025-12-18 13:02:55" in output
+        finally:
+            os.unlink(temp_file)
+
+    def test_main_with_log_format_and_html(self) -> None:
+        """Test main function with log format flag and HTML output."""
+        log_content = """Date,Time,Action,Process,Protocol,LocalAddr,RemoteAddr
+18/12/2025,13.00.54,Added,processName.exe,TCP,10.10.0.1:58100,123.123.123.123:443
+18/12/2025,13.00.56,Removed,processName.exe,TCP,10.10.0.1:58100,123.123.123.123:443"""
+
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".csv") as f:
+            f.write(log_content)
+            temp_file = f.name
+
+        try:
+            with patch(
+                "sys.argv",
+                ["csv_to_mermaid_gantt", temp_file, "--log-format", "--html"],
+            ):
+                with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
+                    main()
+                    output = mock_stdout.getvalue()
+                    assert "<!DOCTYPE html>" in output
+                    assert "processName.exe" in output
+        finally:
+            os.unlink(temp_file)
+
+    def test_main_with_log_format_incomplete_data(self) -> None:
+        """Test main function with log format flag and incomplete data."""
+        log_content = """Date,Time,Action,Process,Protocol,LocalAddr,RemoteAddr
+18/12/2025,13.00.10,Removed,processName.exe,TCP,10.10.0.1:58099,123.123.123.123:443
+18/12/2025,13.00.12,Removed,Unknown,TCP,10.10.0.1:58099,123.123.123.123:443
+18/12/2025,13.10.00,Added,anotherProcess.exe,TCP,10.10.0.1:58101,123.123.123.123:443
+18/12/2025,13.10.02,Added,Unknown,TCP,10.10.0.1:58101,123.123.123.123:443"""
+
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".csv") as f:
+            f.write(log_content)
+            temp_file = f.name
+
+        try:
+            with patch("sys.argv", ["csv_to_mermaid_gantt", temp_file, "--log-format"]):
+                with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
+                    main()
+                    output = mock_stdout.getvalue()
+                    assert "gantt" in output
+                    # Should handle incomplete data gracefully
+                    assert "processName.exe" in output
+                    assert "anotherProcess.exe" in output
+        finally:
+            os.unlink(temp_file)
